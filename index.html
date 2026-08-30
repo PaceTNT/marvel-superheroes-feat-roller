@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🦸 Marvel Superheroes RPG FEAT Roller</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f5f5f2;
+    --panel-bg: #ffffff;
+    --text: #1a1a1a;
+    --muted: #55534d;
+    --border: #d8d5cc;
+    --accent: #7a1f1f;
+    --accent-text: #ffffff;
+
+    --white-bg: #f2f2f0;
+    --white-fg: #3a3a3a;
+    --white-border: #b9b9b4;
+    --green-bg: #1e6b33;
+    --green-fg: #ffffff;
+    --yellow-bg: #c99a00;
+    --yellow-fg: #1a1a1a;
+    --red-bg: #a3241f;
+    --red-fg: #ffffff;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17181a;
+      --panel-bg: #232427;
+      --text: #eceae4;
+      --muted: #a9a69c;
+      --border: #3a3b3e;
+      --accent: #c94b3f;
+      --accent-text: #ffffff;
+
+      --white-bg: #4a4a48;
+      --white-fg: #f2f2f0;
+      --white-border: #6a6a66;
+      --green-bg: #2f8a49;
+      --green-fg: #ffffff;
+      --yellow-bg: #d6ab2b;
+      --yellow-fg: #1a1a1a;
+      --red-bg: #c9463c;
+      --red-fg: #ffffff;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.4;
+  }
+
+  .app {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 1.25rem 1rem 4rem;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    margin: 0 0 0.25rem;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    margin: 0 0 1.25rem;
+    font-size: 0.9rem;
+  }
+
+  .panel {
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .field label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  select, input[type="number"] {
+    font-size: 1rem;
+    padding: 0.5rem 0.6rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--panel-bg);
+    color: var(--text);
+    width: 100%;
+  }
+
+  .ability-display {
+    font-size: 1rem;
+    padding: 0.4rem 0;
+    color: var(--text);
+  }
+
+  .ability-display .value {
+    font-weight: 600;
+  }
+
+  button.roll-btn {
+    display: block;
+    width: 100%;
+    padding: 0.7rem 1rem;
+    font-size: 1rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 8px;
+    background: var(--accent);
+    color: var(--accent-text);
+    cursor: pointer;
+  }
+
+  button.roll-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  button.roll-btn:not(:disabled):hover {
+    filter: brightness(1.08);
+  }
+
+  .result-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.35rem 0.75rem;
+    font-size: 0.95rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .result-grid dt {
+    color: var(--muted);
+    grid-column: 1;
+  }
+
+  .result-grid dd {
+    grid-column: 2;
+    margin: 0;
+  }
+
+  .color-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 700;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+  }
+
+  .color-chip .dot {
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .color-chip.White { background: var(--white-bg); color: var(--white-fg); border-color: var(--white-border); }
+  .color-chip.White .dot { background: var(--white-fg); }
+  .color-chip.Green { background: var(--green-bg); color: var(--green-fg); }
+  .color-chip.Green .dot { background: var(--green-fg); }
+  .color-chip.Yellow { background: var(--yellow-bg); color: var(--yellow-fg); }
+  .color-chip.Yellow .dot { background: var(--yellow-fg); }
+  .color-chip.Red { background: var(--red-bg); color: var(--red-fg); }
+  .color-chip.Red .dot { background: var(--red-fg); }
+
+  .description {
+    font-size: 0.95rem;
+    padding-top: 0.25rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .chain-banner {
+    margin-top: 0.9rem;
+    padding: 0.7rem 0.8rem;
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    font-size: 0.9rem;
+  }
+
+  .chain-banner button {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    padding: 0.45rem 0.8rem;
+    border-radius: 6px;
+    border: 1px solid var(--accent);
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  .chain-panel {
+    margin-top: 0.75rem;
+    padding-left: 0.9rem;
+    border-left: 3px solid var(--accent);
+  }
+
+  .chain-panel .locked-feat {
+    font-size: 0.95rem;
+    margin-bottom: 0.6rem;
+  }
+
+  h2 {
+    font-size: 1.05rem;
+    margin: 0 0 0.6rem;
+  }
+
+  #historyList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 16rem;
+    overflow-y: auto;
+    font-size: 0.88rem;
+  }
+
+  #historyList li {
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  #historyList li:last-child {
+    border-bottom: none;
+  }
+
+  #historyList .hist-feat {
+    color: var(--muted);
+  }
+
+  .empty-note {
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>🦸 Marvel Superheroes RPG FEAT Roller</h1>
+  <p class="subtitle">Function of Exceptional Ability or Talent (FEAT) checks for the MSRPG.</p>
+
+  <div class="panel">
+    <div class="field">
+      <label for="featSelect">FEAT</label>
+      <select id="featSelect">
+        <option value="" disabled selected>-- Select FEAT --</option>
+      </select>
+    </div>
+
+    <div class="ability-display">Ability: <span class="value" id="abilityDisplay">&mdash;</span></div>
+
+    <div class="field">
+      <label for="rankSelect">Rank</label>
+      <select id="rankSelect">
+        <option value="" disabled selected>-- Select Rank --</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="karmaInput">Karma (0&ndash;99)</label>
+      <input type="number" id="karmaInput" min="0" max="99" step="1" value="0">
+    </div>
+
+    <button class="roll-btn" id="rollBtn" disabled>Roll FEAT</button>
+  </div>
+
+  <div class="panel" id="resultPanel" hidden></div>
+
+  <div class="panel">
+    <h2>Roll History</h2>
+    <p class="empty-note" id="historyEmpty">No rolls yet this session.</p>
+    <ul id="historyList"></ul>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------------------------------------------------------------------
+  // Data (transcribed from reference/*.csv — see DESIGN.md §2.1 for the
+  // corrections made to the source CSVs, and §4 for this exact schema).
+  // ---------------------------------------------------------------------
+
+  const FEAT_TABLE = [
+    { feat: "Blunt Attack",   ability: "Fighting",  white: "Miss",   green: "Hit",    yellow: "Slam",     red: "Stun",    group: "action" },
+    { feat: "Edged Attack",   ability: "Fighting",  white: "Miss",   green: "Hit",    yellow: "Stun",     red: "Kill",    group: "action" },
+    { feat: "Shooting",       ability: "Agility",   white: "Miss",   green: "Hit",    yellow: "Bullseye", red: "Kill",    group: "action" },
+    { feat: "Throwing Edged", ability: "Agility",   white: "Miss",   green: "Hit",    yellow: "Stun",     red: "Kill",    group: "action" },
+    { feat: "Throwing Blunt", ability: "Agility",   white: "Miss",   green: "Hit",    yellow: "Hit",      red: "Stun",    group: "action" },
+    { feat: "Energy",         ability: "Agility",   white: "Miss",   green: "Hit",    yellow: "Bullseye", red: "Kill",    group: "action" },
+    { feat: "Force",          ability: "Agility",   white: "Miss",   green: "Hit",    yellow: "Bullseye", red: "Stun",    group: "action" },
+    { feat: "Grappling",      ability: "Strength",  white: "Miss",   green: "Miss",   yellow: "Partial",  red: "Hold",    group: "action" },
+    { feat: "Grabbing",       ability: "Strength",  white: "Miss",   green: "Take",   yellow: "Grab",     red: "Break",   group: "action" },
+    { feat: "Escaping",       ability: "Strength",  white: "Miss",   green: "Miss",   yellow: "Escape",   red: "Reverse", group: "action" },
+    { feat: "Charging",       ability: "Endurance", white: "Miss",   green: "Hit",    yellow: "Slam",     red: "Stun",    group: "action" },
+    { feat: "Dodging",        ability: "Agility",   white: "None",   green: "-2 CS",  yellow: "-4 CS",    red: "-6 CS",   group: "action" },
+    { feat: "Evading",        ability: "Fighting",  white: "Autohit",green: "Evasion",yellow: "+1 CS",    red: "+2 CS",   group: "action" },
+    { feat: "Blocking",       ability: "Strength",  white: "-6 CS",  green: "-4 CS",  yellow: "-2 CS",    red: "+1 CS",   group: "action" },
+    { feat: "Catching",       ability: "Agility",   white: "Autohit",green: "Miss",   yellow: "Damage",   red: "Catch",   group: "action" },
+    { feat: "Stun?",          ability: "Endurance", white: "1-10",   green: "1",      yellow: "No",       red: "No",      group: "resolution" },
+    { feat: "Slam?",          ability: "Endurance", white: "Gr. Slam", green: "1 area", yellow: "Stagger",red: "No",      group: "resolution" },
+    { feat: "Kill?",          ability: "Endurance", white: "Endurance Loss", green: "E/S", yellow: "No",  red: "No",      group: "resolution" },
+  ];
+
+  const RANK_TABLE = [
+    { rank: "Shift 0",    abbr: "0",    startGreen: 66, startYellow: 95, startRed: 100 },
+    { rank: "Feeble",     abbr: "FE",   startGreen: 61, startYellow: 91, startRed: 100 },
+    { rank: "Poor",       abbr: "PR",   startGreen: 56, startYellow: 86, startRed: 100 },
+    { rank: "Typical",    abbr: "TY",   startGreen: 51, startYellow: 81, startRed: 98 },
+    { rank: "Good",       abbr: "GD",   startGreen: 46, startYellow: 76, startRed: 98 },
+    { rank: "Excellent",  abbr: "EX",   startGreen: 41, startYellow: 71, startRed: 95 },
+    { rank: "Remarkable", abbr: "RM",   startGreen: 36, startYellow: 66, startRed: 95 },
+    { rank: "Incredible", abbr: "IN",   startGreen: 31, startYellow: 61, startRed: 91 },
+    { rank: "Amazing",    abbr: "AM",   startGreen: 26, startYellow: 56, startRed: 91 },
+    { rank: "Monstrous",  abbr: "MN",   startGreen: 21, startYellow: 51, startRed: 86 },
+    { rank: "Unearthly",  abbr: "UN",   startGreen: 16, startYellow: 46, startRed: 86 },
+    { rank: "Shift X",    abbr: "X",    startGreen: 11, startYellow: 41, startRed: 81 },
+    { rank: "Shift Y",    abbr: "Y",    startGreen: 7,  startYellow: 41, startRed: 81 },
+    { rank: "Shift Z",    abbr: "Z",    startGreen: 4,  startYellow: 36, startRed: 76 },
+    { rank: "Class 1000", abbr: "1000", startGreen: 2,  startYellow: 36, startRed: 76 },
+    { rank: "Class 3000", abbr: "3000", startGreen: 2,  startYellow: 31, startRed: 71 },
+    { rank: "Class 5000", abbr: "5000", startGreen: 2,  startYellow: 26, startRed: 66 },
+    { rank: "Beyond",     abbr: "B",    startGreen: 2,  startYellow: 21, startRed: 61 },
+  ];
+
+  const DESCRIPTIONS = {
+    "Miss": "No damage, no effect",
+    "Hit": "Inflict damage",
+    "Slam": "Inflict damage. Opponent makes Slam check.",
+    "Stun": "Inflict damage. Opponent makes Stun check.",
+    "Kill": "Weapon rank damage. Opponent makes Kill check.",
+    "Bullseye": "Weapon rank damage. Judge's discretion on additional effects (never fatal).",
+    "Partial": "Attacker grabs limb. Target -2 CS on actions, can't move if Strength is lower.",
+    "Hold": "Initial attack does no damage. While maintaining, attacker may inflict Strength rank damage and perform one action. Target restrained, no actions other than Escape.",
+    "Grab": "Take item.",
+    "Take": "Attacker has full possession of the item if Strength is greater than or equal to target's (use material strength for things that are glued or clamped down). If not, consider as a miss.",
+    "Break": "Take item. May use item - make 2nd roll against material strength of item. White = item damaged or goes off. Others = move half speed or use item.",
+    "Escape": "Free of hold. May move at half speed but no other actions.",
+    "Reverse": "Free of hold. May move at half speed, attempt Grapple, or any action at -2 CS.",
+    "None": "No modifier to attacks against Dodger. Other actions by Dodger at -2 CS penalty this turn.",
+    "Dodging -2 CS": "-2 CS to all ranged/charging (not Slugfest) attacks against Dodger. Other actions by Dodger at -2 CS penalty this turn.",
+    "Dodging -4 CS": "-4 CS to all ranged/charging (not Slugfest) attacks against Dodger. Other actions by Dodger at -2 CS penalty this turn.",
+    "Dodging -6 CS": "-6 CS to all ranged/charging (not Slugfest) attacks against Dodger. Other actions by Dodger at -2 CS penalty this turn.",
+    "Autohit": "Slugfest/Grapling attacks against Evader are automatically at least a green result.",
+    "Evasion": "Evader dodged blow from specific attacker. Attacker does no damage.",
+    "Evading +1 CS": "Evader dodged blow from specific attacker. Attacker does no damage. Next round, +1 CS to hit against attacker.",
+    "+2 CS": "Evader dodged blow from specific attacker. Attacker does no damage. Next round, +2 CS to hit against attacker.",
+    "Catching Autohit": "Object hit the hero instead. Falling object makes charging attack using speed of the fall. For shooting/thrown weapons, hero is automatically hit (white result is treated as a green).",
+    "Blocking -6 CS": "Gain (Strength -6 CS) Body Armor against physically-resistable damage.",
+    "Blocking -4 CS": "Gain (Strength -4 CS) Body Armor against physically-resistable damage.",
+    "Blocking -2 CS": "Gain (Strength -2 CS) Body Armor against physically-resistable damage.",
+    "Blocking +1 CS": "Gain (Strength +1 CS) Body Armor against physically-resistable damage.",
+    "Damage": "Caught the object but might damage it. Treat as damage-inflicting attack on object or character. (restrictions apply, pg 28)",
+    "Catch": "Caught the object with no ill effects. (restrictions apply, pg 28)",
+    "1-10": "Target knocked out for 1-10 rounds. Can take no actions.",
+    "1": "Target knocked out for 1 round. Can take no actions.",
+    "No": "No effect.",
+    "Gr. Slam": "Target knocked away w/speed equal to Strength of attacker (pg. 23 for speeds)",
+    "1 area": "Target knocked 1 area away. If attacker did damage, they choose direction. Otherwise target chooses.",
+    "Stagger": "Target knocked back a step or two, can't do Slugfest yet this turn (no longer considered adjacent).",
+    "Endurance Loss": "Endurance reduced by 1 rank. Will continue to lose endurance 1 rank/turn until situation is cleared.",
+    "E/S": "Endurance reduced by 1 rank only if method of attack was Edged or Shooting attack.",
+    "Charging Miss": "No damage, continues move for half speed. Agility FEAT to change direction. If obstacle hit, must attack it.",
+    "Charging Hit": "Endurance of Body Armor damage, whichever is higher, +2 for every area covered.",
+    "Charging Slam": "Endurance of Body Armor damage, whichever is higher, +2 for every area covered. Opponent makes Slam check.",
+    "Charging Stun": "Endurance of Body Armor damage, whichever is higher, +2 for every area covered. Opponent makes Stun (or Slam) check (attacker's choice).",
+  };
+
+  const TRIGGER_TO_RESOLUTION_FEAT = { Slam: "Slam?", Stun: "Stun?", Kill: "Kill?" };
+
+  const FEAT_BY_NAME = {};
+  FEAT_TABLE.forEach(function (row) { FEAT_BY_NAME[row.feat] = row; });
+
+  // ---------------------------------------------------------------------
+  // Core roll logic (pure functions — see DESIGN.md §5, §6)
+  // ---------------------------------------------------------------------
+
+  function colorFor(total, rank) {
+    if (total < rank.startGreen) return "White";
+    if (total < rank.startYellow) return "Green";
+    if (total < rank.startRed) return "Yellow";
+    return "Red";
+  }
+
+  function describeEffect(featName, effect) {
+    const specific = DESCRIPTIONS[featName + " " + effect];
+    if (specific) return specific;
+    const generic = DESCRIPTIONS[effect];
+    if (generic) return generic;
+    return "No description available for \"" + effect + "\". (Missing a \"" +
+      featName + " " + effect + "\" or \"" + effect + "\" entry in the reference data.)";
+  }
+
+  function rollFeat(featRow, rankRow, karma) {
+    const raw = 1 + Math.floor(Math.random() * 100);
+    const withKarma = raw + karma;
+    const total = Math.min(100, Math.max(1, withKarma));
+    const color = colorFor(total, rankRow);
+    const effect = featRow[color.toLowerCase()];
+    const description = describeEffect(featRow.feat, effect);
+    return { raw: raw, karma: karma, withKarma: withKarma, total: total, color: color, effect: effect, description: description };
+  }
+
+  // ---------------------------------------------------------------------
+  // Rendering helpers
+  // ---------------------------------------------------------------------
+
+  function el(tag, attrs, children) {
+    const node = document.createElement(tag);
+    if (attrs) {
+      Object.keys(attrs).forEach(function (key) {
+        if (key === "text") node.textContent = attrs[key];
+        else if (key === "html") node.innerHTML = attrs[key];
+        else node.setAttribute(key, attrs[key]);
+      });
+    }
+    (children || []).forEach(function (child) { node.appendChild(child); });
+    return node;
+  }
+
+  function colorChip(color) {
+    return el("span", { class: "color-chip " + color }, [
+      el("span", { class: "dot" }),
+      document.createTextNode(color.toUpperCase()),
+    ]);
+  }
+
+  function buildResultDom(featName, rankRow, result) {
+    const dl = el("dl", { class: "result-grid" }, [
+      el("dt", { text: "Raw roll:" }), el("dd", { text: String(result.raw) }),
+      el("dt", { text: "Karma:" }), el("dd", { text: "+" + result.karma }),
+      el("dt", { text: "Total (clamped 1–100):" }), el("dd", { text: String(result.total) }),
+      el("dt", { text: "Color:" }), el("dd", {}, [colorChip(result.color)]),
+      el("dt", { text: "Effect:" }), el("dd", { text: result.effect }),
+    ]);
+    const desc = el("div", { class: "description", text: result.description });
+
+    const wrapper = el("div", {}, [dl, desc]);
+
+    if (TRIGGER_TO_RESOLUTION_FEAT[result.effect]) {
+      const resolutionFeatName = TRIGGER_TO_RESOLUTION_FEAT[result.effect];
+      const banner = el("div", { class: "chain-banner" }, [
+        document.createTextNode("This result calls for a " + result.effect + " FEAT check."),
+      ]);
+      const revealBtn = el("button", { type: "button", text: "Roll " + resolutionFeatName + " FEAT" });
+      banner.appendChild(revealBtn);
+      const chainSlot = el("div", {});
+      banner.appendChild(chainSlot);
+
+      revealBtn.addEventListener("click", function () {
+        revealBtn.disabled = true;
+        revealBtn.style.display = "none";
+        const panel = buildChainPanel(resolutionFeatName);
+        chainSlot.appendChild(panel);
+      }, { once: true });
+
+      wrapper.appendChild(banner);
+    }
+
+    return wrapper;
+  }
+
+  function populateRankSelect(select) {
+    RANK_TABLE.forEach(function (r) {
+      const opt = el("option", { value: r.rank, text: r.rank + " (" + r.abbr + ")" });
+      select.appendChild(opt);
+    });
+  }
+
+  function clampKarma(input) {
+    let v = parseInt(input.value, 10);
+    if (isNaN(v)) v = 0;
+    v = Math.max(0, Math.min(99, v));
+    input.value = String(v);
+    return v;
+  }
+
+  // Builds a nested resolution-check roller (Stun?/Slam?/Kill?), locked to
+  // the given FEAT name, with its own independent Rank/Karma/Roll controls.
+  // Recursively supports further chaining (see DESIGN.md §6), even though
+  // no current data path actually re-triggers.
+  function buildChainPanel(featName) {
+    const featRow = FEAT_BY_NAME[featName];
+    const panel = el("div", { class: "chain-panel" });
+
+    panel.appendChild(el("div", {
+      class: "locked-feat",
+      html: "<strong>FEAT:</strong> " + featName + " &nbsp; <strong>Ability:</strong> " + featRow.ability,
+    }));
+
+    const rankField = el("div", { class: "field" });
+    const rankLabelId = "chainRank_" + Math.random().toString(36).slice(2);
+    rankField.appendChild(el("label", { for: rankLabelId, text: "Rank" }));
+    const rankSelect = el("select", { id: rankLabelId });
+    rankSelect.appendChild(el("option", { value: "", disabled: "disabled", selected: "selected", text: "-- Select Rank --" }));
+    populateRankSelect(rankSelect);
+    rankField.appendChild(rankSelect);
+    panel.appendChild(rankField);
+
+    const karmaField = el("div", { class: "field" });
+    const karmaLabelId = "chainKarma_" + Math.random().toString(36).slice(2);
+    karmaField.appendChild(el("label", { for: karmaLabelId, text: "Karma (0–99)" }));
+    const karmaInput = el("input", { type: "number", id: karmaLabelId, min: "0", max: "99", step: "1", value: "0" });
+    karmaField.appendChild(karmaInput);
+    panel.appendChild(karmaField);
+
+    const rollBtn = el("button", { class: "roll-btn", type: "button", text: "Roll " + featName + " FEAT", disabled: "disabled" });
+    panel.appendChild(rollBtn);
+
+    const resultSlot = el("div", {});
+    panel.appendChild(resultSlot);
+
+    function refreshRollEnabled() {
+      rollBtn.disabled = !rankSelect.value;
+    }
+    rankSelect.addEventListener("change", refreshRollEnabled);
+    karmaInput.addEventListener("change", function () { clampKarma(karmaInput); });
+    karmaInput.addEventListener("blur", function () { clampKarma(karmaInput); });
+
+    rollBtn.addEventListener("click", function () {
+      const rankRow = RANK_TABLE.filter(function (r) { return r.rank === rankSelect.value; })[0];
+      const karma = clampKarma(karmaInput);
+      const result = rollFeat(featRow, rankRow, karma);
+      resultSlot.innerHTML = "";
+      resultSlot.appendChild(buildResultDom(featName, rankRow, result));
+      addHistoryEntry(featName, rankRow.rank, result);
+    });
+
+    return panel;
+  }
+
+  // ---------------------------------------------------------------------
+  // History log
+  // ---------------------------------------------------------------------
+
+  const historyList = document.getElementById("historyList");
+  const historyEmpty = document.getElementById("historyEmpty");
+
+  function addHistoryEntry(featName, rankName, result) {
+    historyEmpty.hidden = true;
+    const li = el("li", {}, [
+      el("span", {}, [
+        el("span", { class: "hist-feat", text: featName + " (" + rankName + "): " }),
+        document.createTextNode(result.total + " "),
+        colorChip(result.color),
+        document.createTextNode(" → " + result.effect),
+      ]),
+    ]);
+    historyList.insertBefore(li, historyList.firstChild);
+  }
+
+  // ---------------------------------------------------------------------
+  // Primary panel wiring
+  // ---------------------------------------------------------------------
+
+  const featSelect = document.getElementById("featSelect");
+  const abilityDisplay = document.getElementById("abilityDisplay");
+  const rankSelect = document.getElementById("rankSelect");
+  const karmaInput = document.getElementById("karmaInput");
+  const rollBtn = document.getElementById("rollBtn");
+  const resultPanel = document.getElementById("resultPanel");
+
+  const actionGroup = el("optgroup", { label: "Attacks & Actions" });
+  const resolutionGroup = el("optgroup", { label: "Resolution Checks" });
+  FEAT_TABLE.forEach(function (row) {
+    const label = row.group === "resolution" ? row.feat.replace("?", " FEAT") : row.feat;
+    const opt = el("option", { value: row.feat, text: label });
+    (row.group === "resolution" ? resolutionGroup : actionGroup).appendChild(opt);
+  });
+  featSelect.appendChild(actionGroup);
+  featSelect.appendChild(resolutionGroup);
+
+  populateRankSelect(rankSelect);
+
+  function refreshRollEnabled() {
+    rollBtn.disabled = !(featSelect.value && rankSelect.value);
+  }
+
+  function syncAbilityDisplay() {
+    const featRow = FEAT_BY_NAME[featSelect.value];
+    abilityDisplay.textContent = featRow ? featRow.ability : "—";
+  }
+
+  featSelect.addEventListener("change", function () {
+    syncAbilityDisplay();
+    refreshRollEnabled();
+  });
+
+  rankSelect.addEventListener("change", refreshRollEnabled);
+
+  // Sync once on load in case the browser leaves a non-placeholder option
+  // (e.g. the first real FEAT) showing as selected before any user
+  // interaction, even though the placeholder option carries `selected`.
+  syncAbilityDisplay();
+  refreshRollEnabled();
+  karmaInput.addEventListener("change", function () { clampKarma(karmaInput); });
+  karmaInput.addEventListener("blur", function () { clampKarma(karmaInput); });
+
+  rollBtn.addEventListener("click", function () {
+    const featRow = FEAT_BY_NAME[featSelect.value];
+    const rankRow = RANK_TABLE.filter(function (r) { return r.rank === rankSelect.value; })[0];
+    const karma = clampKarma(karmaInput);
+    const result = rollFeat(featRow, rankRow, karma);
+
+    resultPanel.innerHTML = "";
+    resultPanel.hidden = false;
+    resultPanel.appendChild(el("h2", { text: "Result" }));
+    resultPanel.appendChild(buildResultDom(featRow.feat, rankRow, result));
+
+    addHistoryEntry(featRow.feat, rankRow.rank, result);
+  });
+})();
+</script>
+</body>
+</html>
