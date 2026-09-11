@@ -106,6 +106,13 @@
     width: 100%;
   }
 
+  .feat-description {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin: -0.5rem 0 0.85rem;
+    line-height: 1.45;
+  }
+
   .ability-display {
     font-size: 1rem;
     padding: 0.4rem 0;
@@ -268,6 +275,8 @@
       </select>
     </div>
 
+    <p class="feat-description" id="featDescription" hidden></p>
+
     <div class="ability-display">Ability: <span class="value" id="abilityDisplay">&mdash;</span></div>
 
     <div class="field">
@@ -386,6 +395,33 @@
     "Charging Hit": "Endurance of Body Armor damage, whichever is higher, +2 for every area covered.",
     "Charging Slam": "Endurance of Body Armor damage, whichever is higher, +2 for every area covered. Opponent makes Slam check.",
     "Charging Stun": "Endurance of Body Armor damage, whichever is higher, +2 for every area covered. Opponent makes Stun (or Slam) check (attacker's choice).",
+  };
+
+  // Per-FEAT plain-language descriptions, transcribed from
+  // reference/MSRPG_FEAT_descriptions.csv (keyed to match FEAT_TABLE.feat,
+  // so the "Stun FEAT"/"Slam FEAT"/"Kill FEAT" CSV rows are keyed here as
+  // "Stun?"/"Slam?"/"Kill?"). A few source typos were corrected in
+  // transcription: "miminum"->"minimum", "teamates"->"teammates",
+  // "manuever"->"maneuver", and a garbled "The?haracter"->"The character".
+  const FEAT_DESCRIPTIONS = {
+    "Blunt Attack": "A Blunt Attack is an attack with bare hands, flat of a blade, or other blunt weapon. A character making a blunt attack may score a hit, slam, or stun result. A hero using blunt attack may always choose to inflict less damage than maximum. A hero may choose to pull his punch, doing less than full damage, or inflict a lesser color result (yellow instead of red).",
+    "Edged Attack": "An Edged Attack is an attack with claws, teeth, or edged weapons such as knives, swords, or hatchets. A character making an edged attack may score a Hit, Stun, or Kill result. An edged attack will always inflict a minimum of the damage listed for that weapon. A character who can normally inflict higher damage may inflict damage equal to his Strength or the material strength of the weapon, whichever is less. Such damage may not be reduced in effect.",
+    "Shooting": "A Shooting Attack is the most \"normal\" form of ranged attack, and consists of using a projectile weapon like a handgun, rifle, or other implement of destruction. A character making a shooting attack may score a Miss, Hit, Bullseye, or Kill result. A Shooting Attack may never be reduced by the attacker in effect or damage. A character scoring a Miss result misses the intended target. The missile continues to fly and the Judge may, if they deem circumstances warrant it, make a second roll to see if the attack hits another target in the same general area and path of the weapon (this is why shooting into a crowd or a gasoline storage shed is known as \"a bad idea\").",
+    "Throwing Edged": "An Edged Throwing Attack involves throwing a sharp, edged weapon such as a knife or shuriken at the target. A character making this attack may score a Miss, Hit, Stun, or Kill result. An edged throwing attack may never be reduced in effect (from red to yellow, for example), but a player may inflict less damage. A character scoring a Miss result misses the intended target. The missile may hit another target as noted for Shooting.",
+    "Throwing Blunt": "A Blunt Throwing Attack involves throwing a dull, blunt weapon such as a rock, bus, or large, concave disk at the opponent. A character may score a Miss, Hit, Bullseye, or Stun result. A blunt thrown weapon inflicts damage equal to the Strength of the thrower, or the material strength of the thrown item, whichever is less. A blunt thrown weapon can be reduced in effect or damage.",
+    "Energy": "An Energy Attack involves those Powers that use energy to shock or damage the target as well as weapons that simulate those abilities, and include fire blast, lightning bolts, and most forms of radiation. Energy Powers have no physical component. A character using an energy attack may score a Miss, Hit, Bullseye, or Kill result. All forms of energy attack have a maximum damage. A player may reduce the damage inflicted by an energy attack, but not the effect (from red to yellow, for example).",
+    "Force": "A Force Attack involves those Powers that use a physical manifestation of energy to inflict damage, and include the plasma-jetting repulsors used by Iron Man, some forms of radiation, the Invisible Woman's force fields, and Iceman's battering ram. A character using a force attack may score a Miss, Hit, Bullseye, or Stun result. A character may choose to inflict less damage with a force attack than maximum, but may not reduce the effects (from red to yellow, for example).",
+    "Grappling": "A Grappling Attack is an attack designed to limit the movement abilities of the opponent. A Grappling attack may score a Miss, Partial Hold, or Hold result.",
+    "Grabbing": "A Grabbing Attack is an attack geared at taking a possession away from an opponent, like a gun, bomb, or Maltese Falcon. A character making a Grabbing attack may score a Miss, Take, Grab, or Break result. These results may have differing effects depending on the relative Strengths of the combatants. Grabbing combat normally does not inflict damage.",
+    "Escaping": "Escaping is an action used by individuals placed in a hold to slip free of the opponent and possibly reverse the damage. A character making an escape may Miss, Escape, or Reverse the Hold.",
+    "Charging": "Charging combat is a form of attack that combines movement and combat. Whereas making any other attack or action halves movement, a charging character may make his full movement and still strike. A character must move at least one area to make a charging attack, but may move his entire movement rate to reach the combat. For each area the character moves through before reaching combat, the attacker gets a +1 CS, up to a maximum of +3 CS (Endurance for figuring this may not be raised beyond Shift Z). The character making a charging attack may score a Miss, Hit, Slam, or Stun.",
+    "Dodging": "Dodging is an Agility ability, and reduces the attacking column shift. A character who is Dodging may move only half his speed in any turn, may not engage in a charging attack, and may perform only one other action that turn, maximum (including making an attack). A character who is Dodging makes an Agility FEAT at the start of the turn, as soon as Initiative is determined. That FEAT will determine the reduced effect of attacks on the character. The result may be no shift, or a -2, -4, or -6 CS shift on any attacks stated in the first part of the round. This means that the character may only dodge attacks of which he is aware. A character may not dodge an unexpected attack, such as a sniper who suddenly appears, an ally who makes an attack, or someone behind the character. (See under Blindsiding.)",
+    "Evading": "Evading is a Fighting FEAT that is used by characters who are playing for time, looking for a weak spot in the opponent's attack and hoping to avoid getting their bodies splattered over the countryside. Evading is an effective defensive tactic only against adjacent attackers, such as those engaged in Slugfest or wrestling combat. Only a single opponent may be Evaded. A character who chooses to Evade announces that intention during the declaration phase of the turn. If both sides are evading, no actual combat occurs - both opponents are engaged in a flurry of feints and parries and no real blows are landed. The Evading character makes no attacks that round, but rolls on the Universal Table and checks the Evasion column in the Effects Table. The results are Auto-Hit, Evasion, Evasion + 1, and Evasion + 2.",
+    "Blocking": "Block is a defensive ability that uses the Strength ability to lessen the damage of physical attacks, which include Grappling, Slugfest, Edged and Blunt Throwing attacks, Force attacks (but not Shooting and Energy attacks) and Wrestling (but not Charging). The Block move is an attempt to meet force with force, and use the individual's Strength as a form of Body Armor against a specific attack. The character using a block may take no other action, but may shield others behind him. Normal Body Armor, but not Force Fields, still apply to defense. The character using the block maneuver does not attack but counts his Strength as Body Armor, provided the force can be physically resisted (use common sense here - a fire cannot be blocked, but a pillar of ice can). Roll on the Universal Table against Strength to determine the effects. The notation -6CS, -4 CS, -2 CS, and +1CS indicates the level of Body Armor gained taken from the Strength of the character.",
+    "Catching": "The Catching maneuver is a move designed to let the hero catch falling objects and teammates, as well as catch objects that are thrown and fired at them. It uses the Agility ability to make this maneuver. The catching maneuver can only be directed against one item at a time. The attempt to catch the item is made on the Universal Table, with Auto-hit, Miss, Damage, and Catch results.",
+    "Stun?": "The Stun result has the potential of taking a hero out of the fight for a number of rounds. A character may be stunned as result of any Slugfest attack, Throwing attack, Force attack, and Charging attack.",
+    "Slam?": "The Slam result is possible as the result of Blunt Attacks and Charging and refers to the physical knocking down or away of an opponent. There are three types of Slam under the Advanced Set rules. The subject of a Slam result rolls on the Universal Table for an Endurance FEAT, checking the result on the Effects Table. The result may be No Slam, Stagger, 1 Area, or Great Slam.",
+    "Kill?": "The Kill result is potentially the most dangerous for the user (and definitely the target). A Kill result may be checked for as the result of an Energy attack, an Edged attack in Slugfest, or a Shooting attack. It may also be called for by reducing a character's total health to 0 - see Life, Death, and Health. The target receiving a Kill result makes an Endurance FEAT on the Universal Table, checking under the Kill column of the Battle Table.",
   };
 
   const TRIGGER_TO_RESOLUTION_FEAT = { Slam: "Slam?", Stun: "Stun?", Kill: "Kill?" };
@@ -577,6 +613,7 @@
 
   const featSelect = document.getElementById("featSelect");
   const abilityDisplay = document.getElementById("abilityDisplay");
+  const featDescription = document.getElementById("featDescription");
   const rankSelect = document.getElementById("rankSelect");
   const karmaInput = document.getElementById("karmaInput");
   const rollBtn = document.getElementById("rollBtn");
@@ -601,6 +638,10 @@
   function syncAbilityDisplay() {
     const featRow = FEAT_BY_NAME[featSelect.value];
     abilityDisplay.textContent = featRow ? featRow.ability : "—";
+
+    const description = featRow ? FEAT_DESCRIPTIONS[featRow.feat] : null;
+    featDescription.textContent = description || "";
+    featDescription.hidden = !description;
   }
 
   featSelect.addEventListener("change", function () {
