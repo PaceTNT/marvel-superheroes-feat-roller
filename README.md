@@ -13,6 +13,11 @@ static file host, or just opened directly from disk.
 ## Using it
 
 1. **Choose a FEAT** from the dropdown. FEATs are grouped into:
+   - **Pre-Action Rolls** — Multiple Attacks - 2 and Multiple Attacks - 3.
+     These are Fighting FEATs against a Remarkable or Amazing Intensity.
+     Once you pick a Rank, the app shows which color you need (Green,
+     Yellow, or Red), or tells you the FEAT is an automatic success or
+     impossible at that Rank. The result is a simple success/failure.
    - **Attacks & Actions** — Blunt Attack, Edged Attack, Shooting, Throwing
      Edged, Throwing Blunt, Energy, Force, Grappling, Grabbing, Escaping,
      Charging, Dodging, Evading, Blocking, Catching

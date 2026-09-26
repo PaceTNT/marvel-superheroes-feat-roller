@@ -111,6 +111,13 @@
     color: var(--muted);
     margin: -0.5rem 0 0.85rem;
     line-height: 1.45;
+    white-space: pre-line;
+  }
+
+  .intensity-note {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin: 0 0 0.85rem;
   }
 
   .ability-display {
@@ -286,6 +293,12 @@
       </select>
     </div>
 
+    <div id="intensityInfo" hidden>
+      <div class="ability-display">Target Intensity: <span class="value" id="intensityDisplay">&mdash;</span></div>
+      <div class="ability-display">Required Result: <span class="value" id="requiredDisplay">&mdash;</span></div>
+      <p class="intensity-note" id="intensityNote" hidden></p>
+    </div>
+
     <div class="field">
       <label for="karmaInput">Karma (0&ndash;99)</label>
       <input type="number" id="karmaInput" min="0" max="99" step="1" value="0">
@@ -312,7 +325,11 @@
   // corrections made to the source CSVs, and §4 for this exact schema).
   // ---------------------------------------------------------------------
 
+  // Pre-Action rows have no per-color effects; they resolve by comparing
+  // the roll against a fixed Intensity (see intensityRequirement()).
   const FEAT_TABLE = [
+    { feat: "Multiple Attacks - 2", ability: "Fighting", intensity: "Remarkable", attacks: 2, group: "preaction" },
+    { feat: "Multiple Attacks - 3", ability: "Fighting", intensity: "Amazing",    attacks: 3, group: "preaction" },
     { feat: "Blunt Attack",   ability: "Fighting",  white: "Miss",   green: "Hit",    yellow: "Slam",     red: "Stun",    group: "action" },
     { feat: "Edged Attack",   ability: "Fighting",  white: "Miss",   green: "Hit",    yellow: "Stun",     red: "Kill",    group: "action" },
     { feat: "Shooting",       ability: "Agility",   white: "Miss",   green: "Hit",    yellow: "Bullseye", red: "Kill",    group: "action" },
@@ -403,7 +420,15 @@
   // "Stun?"/"Slam?"/"Kill?"). A few source typos were corrected in
   // transcription: "miminum"->"minimum", "teamates"->"teammates",
   // "manuever"->"maneuver", and a garbled "The?haracter"->"The character".
+  const MULTIPLE_ATTACKS_DESCRIPTION = "Heroes may make more than one attack in the same round, attacking the same target or different targets. Any character can make multiple attacks, provided that character makes a Fighting FEAT roll in the Pre-Action roll. The intensity of the FEAT depends on the number of attacks desired:\n" +
+    "• Making 2 attacks in the same round - Remarkable (RM) Intensity FEAT\n" +
+    "• Making 3 attacks in the same round - Amazing (AM) Intensity FEAT\n" +
+    "All multiple attacks are made at -1CS to hit. If the Fighting FEAT fails, only one attack is made at -3CS.\n" +
+    "The above applies to Slugfest attacks and Shooting only. Certain Powers may permit multiple attacks as Power Stunts without invoking this rule.";
+
   const FEAT_DESCRIPTIONS = {
+    "Multiple Attacks - 2": MULTIPLE_ATTACKS_DESCRIPTION,
+    "Multiple Attacks - 3": MULTIPLE_ATTACKS_DESCRIPTION,
     "Blunt Attack": "A Blunt Attack is an attack with bare hands, flat of a blade, or other blunt weapon. A character making a blunt attack may score a hit, slam, or stun result. A hero using blunt attack may always choose to inflict less damage than maximum. A hero may choose to pull his punch, doing less than full damage, or inflict a lesser color result (yellow instead of red).",
     "Edged Attack": "An Edged Attack is an attack with claws, teeth, or edged weapons such as knives, swords, or hatchets. A character making an edged attack may score a Hit, Stun, or Kill result. An edged attack will always inflict a minimum of the damage listed for that weapon. A character who can normally inflict higher damage may inflict damage equal to his Strength or the material strength of the weapon, whichever is less. Such damage may not be reduced in effect.",
     "Shooting": "A Shooting Attack is the most \"normal\" form of ranged attack, and consists of using a projectile weapon like a handgun, rifle, or other implement of destruction. A character making a shooting attack may score a Miss, Hit, Bullseye, or Kill result. A Shooting Attack may never be reduced by the attacker in effect or damage. A character scoring a Miss result misses the intended target. The missile continues to fly and the Judge may, if they deem circumstances warrant it, make a second roll to see if the attack hits another target in the same general area and path of the weapon (this is why shooting into a crowd or a gasoline storage shed is known as \"a bad idea\").",
@@ -457,6 +482,51 @@
     const effect = featRow[color.toLowerCase()];
     const description = describeEffect(featRow.feat, effect);
     return { raw: raw, karma: karma, withKarma: withKarma, total: total, color: color, effect: effect, description: description };
+  }
+
+  const COLOR_ORDER = ["White", "Green", "Yellow", "Red"];
+
+  function rankIndex(rankName) {
+    for (let i = 0; i < RANK_TABLE.length; i++) {
+      if (RANK_TABLE[i].rank === rankName) return i;
+    }
+    return -1;
+  }
+
+  // Compares a target Intensity to the character's Ability rank:
+  //   Intensity > 1 rank above Ability      -> impossible
+  //   Intensity 1 rank above Ability        -> Red required
+  //   Intensity equal to Ability            -> Yellow required
+  //   Intensity 1-3 ranks below Ability     -> Green required
+  //   Intensity > 3 ranks below Ability     -> automatic success
+  function intensityRequirement(abilityRankName, intensityRankName) {
+    const diff = rankIndex(intensityRankName) - rankIndex(abilityRankName);
+    if (diff > 1) return { kind: "impossible" };
+    if (diff === 1) return { kind: "roll", color: "Red" };
+    if (diff === 0) return { kind: "roll", color: "Yellow" };
+    if (diff >= -3) return { kind: "roll", color: "Green" };
+    return { kind: "auto" };
+  }
+
+  function describeMultipleAttacks(featRow, success) {
+    return success
+      ? "Make " + featRow.attacks + " attacks this round (same or different targets), each at -1 CS to hit."
+      : "The Fighting FEAT failed: only one attack is made this round, at -3 CS to hit.";
+  }
+
+  function rollIntensityFeat(featRow, rankRow, karma) {
+    const requirement = intensityRequirement(rankRow.rank, featRow.intensity);
+    if (requirement.kind === "auto") {
+      return { auto: true, requirement: requirement, success: true, effect: "Automatic Success",
+        description: describeMultipleAttacks(featRow, true) };
+    }
+    const raw = 1 + Math.floor(Math.random() * 100);
+    const withKarma = raw + karma;
+    const total = Math.min(100, Math.max(1, withKarma));
+    const color = colorFor(total, rankRow);
+    const success = COLOR_ORDER.indexOf(color) >= COLOR_ORDER.indexOf(requirement.color);
+    return { raw: raw, karma: karma, withKarma: withKarma, total: total, color: color, requirement: requirement,
+      success: success, effect: success ? "Success" : "Failure", description: describeMultipleAttacks(featRow, success) };
   }
 
   // ---------------------------------------------------------------------
@@ -516,6 +586,32 @@
     }
 
     return wrapper;
+  }
+
+  function rankLabel(rankName) {
+    return rankName + " (" + RANK_TABLE[rankIndex(rankName)].abbr + ")";
+  }
+
+  function buildIntensityResultDom(featRow, result) {
+    const rows = [
+      el("dt", { text: "Target Intensity:" }), el("dd", { text: rankLabel(featRow.intensity) }),
+    ];
+    if (result.auto) {
+      rows.push(el("dt", { text: "Required:" }), el("dd", { text: "None (Intensity is more than 3 ranks below Ability)" }));
+    } else {
+      rows.push(
+        el("dt", { text: "Required:" }), el("dd", {}, [colorChip(result.requirement.color), document.createTextNode(" or better")]),
+        el("dt", { text: "Raw roll:" }), el("dd", { text: String(result.raw) }),
+        el("dt", { text: "Karma:" }), el("dd", { text: "+" + result.karma }),
+        el("dt", { text: "Total (clamped 1–100):" }), el("dd", { text: String(result.total) }),
+        el("dt", { text: "Color:" }), el("dd", {}, [colorChip(result.color)])
+      );
+    }
+    rows.push(el("dt", { text: "Outcome:" }), el("dd", {}, [el("strong", { text: result.effect })]));
+    return el("div", {}, [
+      el("dl", { class: "result-grid" }, rows),
+      el("div", { class: "description", text: result.description }),
+    ]);
   }
 
   function populateRankSelect(select) {
@@ -596,14 +692,14 @@
 
   function addHistoryEntry(featName, rankName, result) {
     historyEmpty.hidden = true;
-    const li = el("li", {}, [
-      el("span", {}, [
-        el("span", { class: "hist-feat", text: featName + " (" + rankName + "): " }),
-        document.createTextNode(result.total + " "),
-        colorChip(result.color),
-        document.createTextNode(" → " + result.effect),
-      ]),
-    ]);
+    const parts = [el("span", { class: "hist-feat", text: featName + " (" + rankName + "): " })];
+    if (result.auto) {
+      parts.push(document.createTextNode(result.effect));
+    } else {
+      parts.push(document.createTextNode(result.total + " "), colorChip(result.color),
+        document.createTextNode(" → " + result.effect));
+    }
+    const li = el("li", {}, [el("span", {}, parts)]);
     historyList.insertBefore(li, historyList.firstChild);
   }
 
@@ -619,20 +715,65 @@
   const rollBtn = document.getElementById("rollBtn");
   const resultPanel = document.getElementById("resultPanel");
 
-  const actionGroup = el("optgroup", { label: "Attacks & Actions" });
-  const resolutionGroup = el("optgroup", { label: "Resolution Checks" });
+  const intensityInfo = document.getElementById("intensityInfo");
+  const intensityDisplay = document.getElementById("intensityDisplay");
+  const requiredDisplay = document.getElementById("requiredDisplay");
+  const intensityNote = document.getElementById("intensityNote");
+
+  const featGroups = {
+    preaction: el("optgroup", { label: "Pre-Action Rolls" }),
+    action: el("optgroup", { label: "Attacks & Actions" }),
+    resolution: el("optgroup", { label: "Resolution Checks" }),
+  };
   FEAT_TABLE.forEach(function (row) {
     const label = row.group === "resolution" ? row.feat.replace("?", " FEAT") : row.feat;
     const opt = el("option", { value: row.feat, text: label });
-    (row.group === "resolution" ? resolutionGroup : actionGroup).appendChild(opt);
+    featGroups[row.group].appendChild(opt);
   });
-  featSelect.appendChild(actionGroup);
-  featSelect.appendChild(resolutionGroup);
+  featSelect.appendChild(featGroups.preaction);
+  featSelect.appendChild(featGroups.action);
+  featSelect.appendChild(featGroups.resolution);
 
   populateRankSelect(rankSelect);
 
+  // Requirement for the selected Pre-Action FEAT at the selected Rank, or
+  // null when the FEAT isn't Intensity-based or no Rank is chosen yet.
+  function currentRequirement() {
+    const featRow = FEAT_BY_NAME[featSelect.value];
+    if (!featRow || !featRow.intensity || !rankSelect.value) return null;
+    return intensityRequirement(rankSelect.value, featRow.intensity);
+  }
+
   function refreshRollEnabled() {
-    rollBtn.disabled = !(featSelect.value && rankSelect.value);
+    const requirement = currentRequirement();
+    rollBtn.disabled = !(featSelect.value && rankSelect.value) ||
+      (requirement !== null && requirement.kind === "impossible");
+  }
+
+  function syncIntensityDisplay() {
+    const featRow = FEAT_BY_NAME[featSelect.value];
+    intensityInfo.hidden = !(featRow && featRow.intensity);
+    if (intensityInfo.hidden) return;
+
+    intensityDisplay.textContent = rankLabel(featRow.intensity);
+    requiredDisplay.textContent = "";
+    intensityNote.hidden = true;
+
+    const requirement = currentRequirement();
+    if (!requirement) {
+      requiredDisplay.textContent = "— (select a Rank)";
+    } else if (requirement.kind === "auto") {
+      requiredDisplay.textContent = "Automatic success";
+      intensityNote.textContent = "The Intensity is more than 3 ranks below your Fighting rank, so no roll is needed.";
+      intensityNote.hidden = false;
+    } else if (requirement.kind === "impossible") {
+      requiredDisplay.textContent = "Impossible";
+      intensityNote.textContent = "The Intensity is more than 1 rank above your Fighting rank, so this FEAT cannot be attempted (unless you can persuade the Judge).";
+      intensityNote.hidden = false;
+    } else {
+      requiredDisplay.appendChild(colorChip(requirement.color));
+      requiredDisplay.appendChild(document.createTextNode(" or better"));
+    }
   }
 
   function syncAbilityDisplay() {
@@ -642,6 +783,7 @@
     const description = featRow ? FEAT_DESCRIPTIONS[featRow.feat] : null;
     featDescription.textContent = description || "";
     featDescription.hidden = !description;
+    syncIntensityDisplay();
   }
 
   featSelect.addEventListener("change", function () {
@@ -649,7 +791,10 @@
     refreshRollEnabled();
   });
 
-  rankSelect.addEventListener("change", refreshRollEnabled);
+  rankSelect.addEventListener("change", function () {
+    syncIntensityDisplay();
+    refreshRollEnabled();
+  });
 
   // Sync once on load in case the browser leaves a non-placeholder option
   // (e.g. the first real FEAT) showing as selected before any user
@@ -663,12 +808,14 @@
     const featRow = FEAT_BY_NAME[featSelect.value];
     const rankRow = RANK_TABLE.filter(function (r) { return r.rank === rankSelect.value; })[0];
     const karma = clampKarma(karmaInput);
-    const result = rollFeat(featRow, rankRow, karma);
+    const result = featRow.intensity ? rollIntensityFeat(featRow, rankRow, karma) : rollFeat(featRow, rankRow, karma);
 
     resultPanel.innerHTML = "";
     resultPanel.hidden = false;
     resultPanel.appendChild(el("h2", { text: "Result" }));
-    resultPanel.appendChild(buildResultDom(featRow.feat, rankRow, result));
+    resultPanel.appendChild(featRow.intensity
+      ? buildIntensityResultDom(featRow, result)
+      : buildResultDom(featRow.feat, rankRow, result));
 
     addHistoryEntry(featRow.feat, rankRow.rank, result);
   });
